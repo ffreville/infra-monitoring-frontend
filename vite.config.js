@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     port: 3000,
+    allowedHosts: true,
     proxy: {
       '/api': {
         //Replace the target by the backend development url
