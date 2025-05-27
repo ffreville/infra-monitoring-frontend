@@ -5,6 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 async function apiCall(endpoint) {
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`)
+    console.log("API url : "+API_BASE_URL)
     
     if (!response.ok) {
       throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`)
