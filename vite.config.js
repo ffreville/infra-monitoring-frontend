@@ -7,11 +7,11 @@ export default defineConfig({
     port: 3000,
     allowedHosts: true,
     proxy: {
-      '/api': {
+      '/devapi': {
         //Replace the target by the backend development url
         target: 'https://localhost:8080',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        rewrite: (path) => path.replace(/^\/devapi/, '')
       }
     }
   }
