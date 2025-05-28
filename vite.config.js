@@ -9,7 +9,7 @@ export default defineConfig({
     proxy: {
       '/devapi': {
         //Replace the target by the backend development url
-        target: 'https://localhost:8080',
+        target: 'http://localhost:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/devapi/, '')
       }

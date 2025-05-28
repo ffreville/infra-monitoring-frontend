@@ -12,15 +12,11 @@
     
     <!-- Informations -->
     <div class="text-sm text-gray-600 space-y-1">
-      <div class="flex justify-between">
-        <span>Réplicas:</span>
-        <span class="font-medium">{{ deployment.replicas || 'N/A' }}</span>
-      </div>
-      
+
       <div v-if="deployment.ready" class="flex justify-between">
         <span>Prêt:</span>
         <span class="font-medium" :class="readyStatusClass">
-          {{ deployment.ready }}
+          {{ deployment.ready }} / {{ deployment.replicas }}
         </span>
       </div>
       
@@ -30,10 +26,19 @@
           {{ deployment.status || 'Running' }}
         </span>
       </div>
+      <div v-if="deployment.images" class="flex justify-between">
+         <span>Versions:</span>
+         <span>
+             <li v-for="(image, index) in deployment.images" :key="index">
+                {{ image }}
+            </li>
+         </span>
+       
+      </div>
     </div>
     
     <!-- Actions -->
-    <div class="mt-3 flex justify-end space-x-2">
+    <!--div class="mt-3 flex justify-end space-x-2">
       <button 
         @click="$emit('view-details', deployment)"
         class="text-xs text-blue-600 hover:text-blue-800 font-medium"
@@ -46,7 +51,7 @@
       >
         Scale
       </button>
-    </div>
+    </div-->
   </div>
 </template>
 
@@ -72,17 +77,13 @@ const statusClass = computed(() => {
 })
 
 const readyStatusClass = computed(() => {
-  console.log(props.deployment)
   const ready = props.deployment.ready || '0'
-  //const [current, total] = ready.split('/').map(Number)
-  /*return {
-    'text-green-600': current === total && total > 0,
-    'text-yellow-600': current < total && current > 0,
-    'text-red-600': current === 0 && total > 0
-  }*/
+  const replicas = props.deployment.replicas || '0'
   return {
-    'text-green-600': ready > 0,
-    'text-red-600': ready === 0
+    'text-green-600': ready === replicas && replicas > 0,
+    'text-yellow-600': ready < replicas && ready > 0,
+    'text-red-600': ready === 0 && replicas > 0
   }
+
 })
 </script>
