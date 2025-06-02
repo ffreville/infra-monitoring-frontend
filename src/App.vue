@@ -8,6 +8,15 @@
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <!-- Sélecteur de clusters -->
+      <div class="px-4 sm:px-0">
+        <ClusterSelector
+          v-model:selected-clusters="selectedClusters"
+          :cluster-statuses="state.clusterStatuses"
+          :cluster-errors="state.clusterErrors"
+        />
+      </div>
+
       <!-- Filtres -->
       <div class="px-4 py-6 sm:px-0">
         <ResourceFilters
@@ -21,7 +30,7 @@
 
       <!-- Message d'erreur -->
       <Transition name="fade">
-        <div v-if="state.error" class="px-4 sm:px-0 mb-6">
+        <div v-if="state.error && selectedClusters.length > 0" class="px-4 sm:px-0 mb-6">
           <div class="bg-red-50 border border-red-200 rounded-md p-4">
             <div class="flex">
               <div class="flex-shrink-0">
@@ -42,8 +51,17 @@
         </div>
       </Transition>
 
+      <!-- Message si aucun cluster sélectionné -->
+      <div v-if="selectedClusters.length === 0" class="px-4 sm:px-0">
+        <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4 text-center">
+          <p class="text-sm text-yellow-800">
+            Veuillez sélectionner au moins un cluster pour afficher les ressources.
+          </p>
+        </div>
+      </div>
+
       <!-- Cartes de ressources -->
-      <div class="px-4 sm:px-0">
+      <div v-else class="px-4 sm:px-0">
         <div class="grid grid-cols-1 gap-6">
           <!-- Deployments -->
           <Transition name="slide">
@@ -57,7 +75,7 @@
               <template #default="{ resources }">
                 <DeploymentCard
                   v-for="deployment in resources"
-                  :key="deployment.name"
+                  :key="`${deployment.clusterId}-${deployment.namespace}-${deployment.name}`"
                   :deployment="deployment"
                   @view-details="handleViewDetails"
                   @scale="handleScale"
@@ -78,7 +96,7 @@
               <template #default="{ resources }">
                 <CronJobCard
                   v-for="cronjob in resources"
-                  :key="cronjob.name"
+                  :key="`${cronjob.clusterId}-${cronjob.namespace}-${cronjob.name}`"
                   :cronjob="cronjob"
                   @view-details="handleViewDetails"
                   @trigger="handleTrigger"
@@ -99,7 +117,7 @@
               <template #default="{ resources }">
                 <StatefulSetCard
                   v-for="statefulset in resources"
-                  :key="statefulset.name"
+                  :key="`${statefulset.clusterId}-${statefulset.namespace}-${statefulset.name}`"
                   :statefulset="statefulset"
                   @view-details="handleViewDetails"
                   @scale="handleScale"
@@ -126,6 +144,7 @@ import { useKubernetesData } from './composables/useKubernetesData'
 
 // Composants
 import KubernetesHeader from './components/KubernetesHeader.vue'
+import ClusterSelector from './components/ClusterSelector.vue'
 import ResourceFilters from './components/ResourceFilters.vue'
 import ResourceCard from './components/ResourceCard.vue'
 import DeploymentCard from './components/DeploymentCard.vue'
@@ -138,6 +157,7 @@ const {
   state,
   selectedNamespace,
   selectedResourceType,
+  selectedClusters,
   filteredDeployments,
   filteredCronJobs,
   filteredStatefulSets,
