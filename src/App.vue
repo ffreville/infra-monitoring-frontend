@@ -75,8 +75,9 @@
               <template #default="{ resources }">
                 <DeploymentCard
                   v-for="deployment in resources"
-                  :key="`${deployment.clusterId}-${deployment.namespace}-${deployment.name}`"
+                  :key="`${deployment.namespace}-${deployment.name}`"
                   :deployment="deployment"
+                  :selected-clusters="selectedClusters"
                   @view-details="handleViewDetails"
                   @scale="handleScale"
                 />
