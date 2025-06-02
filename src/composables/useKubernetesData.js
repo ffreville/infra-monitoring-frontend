@@ -1,5 +1,6 @@
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { kubernetesApi, mockData } from '../services/kubernetesApi'
+import { clusters } from '../config/clusters'
 
 export function useKubernetesData() {
   // État réactif
@@ -9,40 +10,87 @@ export function useKubernetesData() {
     statefulsets: [],
     namespaces: [],
     loading: false,
-    error: null
+    error: null,
+    clusterStatuses: {}, // { clusterId: 'loading' | 'success' | 'error' }
+    clusterErrors: {} // { clusterId: errorMessage }
   })
 
   // Filtres
   const selectedNamespace = ref('')
   const selectedResourceType = ref('')
+  const selectedClusters = ref(clusters.map(c => c.id)) // Tous sélectionnés par défaut
 
-  // Charger toutes les données
+  // Charger les données des clusters sélectionnés
   async function loadAllData() {
+    if (selectedClusters.value.length === 0) {
+      state.deployments = []
+      state.cronjobs = []
+      state.statefulsets = []
+      state.namespaces = []
+      return
+    }
+
     state.loading = true
     state.error = null
+    state.clusterStatuses = {}
+    state.clusterErrors = {}
+
+    // Marquer tous les clusters sélectionnés comme en cours de chargement
+    selectedClusters.value.forEach(clusterId => {
+      state.clusterStatuses[clusterId] = 'loading'
+    })
 
     try {
-      const data = await kubernetesApi.getAllResources()
+      const data = await kubernetesApi.getAllClustersResources(selectedClusters.value)
       
-      state.deployments = data.deployments.deployments
-      state.cronjobs = data.cronjobs.cronjobs
-      state.statefulsets = data.statefulsets.statefulsets
-      state.namespaces = data.namespaces.namespaces
+      state.deployments = data.deployments
+      state.cronjobs = data.cronjobs
+      state.statefulsets = data.statefulsets
+      state.namespaces = data.namespaces
+
+      // Mettre à jour les statuts des clusters
+      selectedClusters.value.forEach(clusterId => {
+        const hasError = data.errors?.some(e => e.cluster === clusters.find(c => c.id === clusterId)?.name)
+        if (hasError) {
+          const error = data.errors.find(e => e.cluster === clusters.find(c => c.id === clusterId)?.name)
+          state.clusterStatuses[clusterId] = 'error'
+          state.clusterErrors[clusterId] = error.error
+        } else {
+          state.clusterStatuses[clusterId] = 'success'
+        }
+      })
+
+      // S'il y a des erreurs mais aussi des données, on affiche un message d'avertissement
+      if (data.errors && data.errors.length > 0) {
+        const failedClusters = data.errors.map(e => e.cluster).join(', ')
+        state.error = `Impossible de charger les données de certains clusters: ${failedClusters}`
+      }
     } catch (error) {
-      state.error = `Impossible de charger les données: ${error.message}`
+      state.error = `Erreur générale: ${error.message}`
       console.warn('Utilisation des données de démonstration')
       
-      // Utiliser les données de démonstration en cas d'erreur
+      // Utiliser les données de démonstration en cas d'erreur complète
       state.deployments = mockData.deployments
       state.cronjobs = mockData.cronjobs
       state.statefulsets = mockData.statefulsets
       state.namespaces = mockData.namespaces
+
+      // Marquer tous les clusters comme en erreur
+      selectedClusters.value.forEach(clusterId => {
+        state.clusterStatuses[clusterId] = 'error'
+        state.clusterErrors[clusterId] = error.message
+      })
     } finally {
       state.loading = false
     }
   }
 
-  // Filtrer les ressources par namespace
+  // Recharger quand les clusters sélectionnés changent
+  watch(selectedClusters, () => {
+    loadAllData()
+  }, { deep: true })
+
+  // Filtrer les ressources par namespace et cluster
   function getFilteredResources(resourceType) {
     let resources = []
     
@@ -60,11 +108,12 @@ export function useKubernetesData() {
         return []
     }
 
-    if (!selectedNamespace.value) {
-      return resources
+    // Filtrer par namespace si nécessaire
+    if (selectedNamespace.value) {
+      resources = resources.filter(resource => resource.namespace === selectedNamespace.value)
     }
 
-    return resources.filter(resource => resource.namespace === selectedNamespace.value)
+    return resources
   }
 
   // Vérifier si un type de ressource doit être affiché
@@ -102,11 +151,17 @@ export function useKubernetesData() {
     selectedResourceType.value = ''
   }
 
+  // Obtenir les clusters disponibles
+  function getAvailableClusters() {
+    return clusters
+  }
+
   return {
     // État
     state,
     selectedNamespace,
     selectedResourceType,
+    selectedClusters,
     
     // Computed
     filteredDeployments,
@@ -119,6 +174,7 @@ export function useKubernetesData() {
     refreshData,
     resetFilters,
     getFilteredResources,
-    shouldShowResourceType
+    shouldShowResourceType,
+    getAvailableClusters
   }
 }

@@ -2,12 +2,22 @@
   <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
     <!-- En-tête -->
     <div class="flex items-center justify-between mb-2">
-      <h4 class="font-medium text-gray-900 truncate">
+      <h4 class="font-medium text-gray-900 truncate flex items-center">
+        <span 
+          class="w-2 h-2 rounded-full mr-2" 
+          :class="getClusterColorClass(cronjob.clusterColor)"
+          :title="`Cluster: ${cronjob.clusterName}`"
+        ></span>
         {{ cronjob.name }}
       </h4>
-      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-        {{ cronjob.namespace }}
-      </span>
+      <div class="flex items-center space-x-2">
+        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          {{ cronjob.clusterName }}
+        </span>
+        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          {{ cronjob.namespace }}
+        </span>
+      </div>
     </div>
     
     <!-- Informations -->
@@ -92,5 +102,16 @@ function formatLastRun(lastRun) {
   } catch (error) {
     return 'N/A'
   }
+}
+
+function getClusterColorClass(color) {
+  const colorMap = {
+    blue: 'bg-blue-500',
+    green: 'bg-green-500',
+    yellow: 'bg-yellow-500',
+    purple: 'bg-purple-500',
+    orange: 'bg-orange-500'
+  }
+  return colorMap[color] || 'bg-gray-500'
 }
 </script>
