@@ -1,65 +1,9 @@
 import { clusters } from '../config/clusters'
 
-// Fonction pour récupérer le token Pomerium depuis les cookies ou headers
-function getPomeriumToken() {
-  // Option 1: Récupérer depuis les cookies (si Pomerium est configuré pour les exposer)
-  const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-    const [key, value] = cookie.trim().split('=')
-    acc[key] = value
-    return acc
-  }, {})
-  
-  // Pomerium utilise généralement un cookie "_pomerium"
-  if (cookies._pomerium) {
-    return cookies._pomerium
-  }
-
-  // Option 2: Si le token est exposé dans le localStorage ou sessionStorage
-  // (nécessite une configuration côté Pomerium pour exposer le JWT)
-  const jwtToken = localStorage.getItem('pomerium_jwt') || sessionStorage.getItem('pomerium_jwt')
-  if (jwtToken) {
-    return jwtToken
-  }
-
-  return null
-}
-
-// Fonction pour obtenir les headers d'authentification
-function getAuthHeaders() {
-  const headers = {
-    'Content-Type': 'application/json',
-  }
-
-  // Si vous utilisez les cookies, ils seront automatiquement envoyés
-  // Assurez-vous que les APIs sont sur le même domaine ou que CORS est bien configuré
-  
-  // Si vous avez accès au JWT Pomerium
-  const token = getPomeriumToken()
-  if (token) {
-    // Option 1: Envoyer le token dans un header Authorization
-    headers['Authorization'] = `Bearer ${token}`
-    
-    // Option 2: Envoyer dans le header spécifique Pomerium
-    headers['X-Pomerium-Authorization'] = `Bearer ${token}`
-  }
-
-  return headers
-}
-
-// Fonction générique pour les appels API avec authentification
+// Fonction générique pour les appels API
 async function apiCall(clusterApiUrl, endpoint) {
   try {
-    const response = await fetch(`${clusterApiUrl}${endpoint}`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-      credentials: 'include', // Important: inclure les cookies dans la requête
-    })
-    
-    if (response.status === 401) {
-      // Token expiré ou invalide - rediriger vers la page de login Pomerium
-      window.location.href = '/.pomerium/sign_in'
-      throw new Error('Authentication required')
-    }
+    const response = await fetch(`${clusterApiUrl}${endpoint}`)
     
     if (!response.ok) {
       throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`)
@@ -68,34 +12,6 @@ async function apiCall(clusterApiUrl, endpoint) {
     return await response.json()
   } catch (error) {
     console.error(`Erreur lors de l'appel à ${clusterApiUrl}${endpoint}:`, error)
-    throw error
-  }
-}
-
-// Fonction pour vérifier l'authentification au démarrage
-async function checkAuthentication() {
-  try {
-    // Appel à l'endpoint Pomerium pour vérifier l'authentification
-    const response = await fetch('/.pomerium/api/v1/session', {
-      credentials: 'include'
-    })
-    
-    if (!response.ok) {
-      throw new Error('Not authenticated')
-    }
-    
-    const session = await response.json()
-    
-    // Optionnel: Stocker le JWT si Pomerium l'expose
-    if (session.jwt) {
-      sessionStorage.setItem('pomerium_jwt', session.jwt)
-    }
-    
-    return session
-  } catch (error) {
-    console.error('Authentication check failed:', error)
-    // Rediriger vers la page de login
-    window.location.href = '/.pomerium/sign_in'
     throw error
   }
 }
@@ -161,7 +77,6 @@ class ClusterApi {
 
 // API pour gérer plusieurs clusters
 export const kubernetesApi = {
-
   // Récupérer les données de tous les clusters sélectionnés
   async getAllClustersResources(selectedClusterIds) {
     const selectedClusters = clusters.filter(c => selectedClusterIds.includes(c.id))
