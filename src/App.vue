@@ -173,17 +173,17 @@ const {
 
 // Gestionnaires d'événements
 function handleViewDetails(resource) {
-  console.log('Voir les détails de:', resource)
+  //console.log('Voir les détails de:', resource)
   // Ici vous pourriez ouvrir une modal ou naviguer vers une page de détails
 }
 
 function handleScale(resource) {
-  console.log('Scale resource:', resource)
+  //console.log('Scale resource:', resource)
   // Ici vous pourriez ouvrir une modal pour modifier le nombre de réplicas
 }
 
 function handleTrigger(cronjob) {
-  console.log('Déclencher cronjob:', cronjob)
+  //console.log('Déclencher cronjob:', cronjob)
   // Ici vous pourriez déclencher manuellement le cronjob
 }
 

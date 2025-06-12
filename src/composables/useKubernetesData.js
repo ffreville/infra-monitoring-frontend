@@ -22,7 +22,7 @@ export function useKubernetesData() {
 
   // Fonction pour regrouper les déploiements par nom (méthode originale)
   function groupDeploymentsByName(deployments) {
-    console.log('🚀 Grouping deployments:', deployments)
+    //console.log('🚀 Grouping deployments:', deployments)
     const grouped = {}
     
     // Initialiser les groupes avec tous les déploiements uniques
@@ -63,13 +63,13 @@ export function useKubernetesData() {
     })
     
     const result = Object.values(grouped)
-    console.log('✅ Grouped deployments result:', result)
+    //console.log('✅ Grouped deployments result:', result)
     return result
   }
 
   // Fonction pour regrouper les CronJobs par nom
   function groupCronJobsByName(cronjobs) {
-    console.log('🚀 Grouping cronjobs:', cronjobs)
+    //console.log('🚀 Grouping cronjobs:', cronjobs)
     const grouped = {}
     
     cronjobs.forEach(cronjob => {
@@ -113,13 +113,13 @@ export function useKubernetesData() {
     })
     
     const result = Object.values(grouped)
-    console.log('✅ Grouped cronjobs result:', result)
+    //console.log('✅ Grouped cronjobs result:', result)
     return result
   }
 
   // Fonction pour regrouper les StatefulSets par nom
   function groupStatefulSetsByName(statefulsets) {
-    console.log('🚀 Grouping statefulsets:', statefulsets)
+    //console.log('🚀 Grouping statefulsets:', statefulsets)
     const grouped = {}
     
     statefulsets.forEach(statefulset => {
@@ -157,16 +157,16 @@ export function useKubernetesData() {
     })
     
     const result = Object.values(grouped)
-    console.log('✅ Grouped statefulsets result:', result)
+    //console.log('✅ Grouped statefulsets result:', result)
     return result
   }
 
   // Charger les données des clusters sélectionnés
   async function loadAllData() {
-    console.log('🔄 Loading data for clusters:', selectedClusters.value)
+    //console.log('🔄 Loading data for clusters:', selectedClusters.value)
     
     if (selectedClusters.value.length === 0) {
-      console.log('⚠️ No clusters selected, clearing data')
+      //console.log('⚠️ No clusters selected, clearing data')
       state.deployments = []
       state.cronjobs = []
       state.statefulsets = []
@@ -186,7 +186,7 @@ export function useKubernetesData() {
 
     try {
       const data = await kubernetesApi.getAllClustersResources(selectedClusters.value)
-      console.log('📦 Raw data from API:', data)
+      //console.log('📦 Raw data from API:', data)
       
       // Regrouper les ressources par nom
       state.deployments = groupDeploymentsByName(data.deployments)
@@ -194,10 +194,10 @@ export function useKubernetesData() {
       state.statefulsets = groupStatefulSetsByName(data.statefulsets)
       state.namespaces = data.namespaces
 
-      console.log('📊 Final state:')
-      console.log('  - Deployments:', state.deployments)
-      console.log('  - CronJobs:', state.cronjobs)
-      console.log('  - StatefulSets:', state.statefulsets)
+      //console.log('📊 Final state:')
+      //console.log('  - Deployments:', state.deployments)
+      //console.log('  - CronJobs:', state.cronjobs)
+      //console.log('  - StatefulSets:', state.statefulsets)
 
       // Mettre à jour les statuts des clusters
       selectedClusters.value.forEach(clusterId => {
@@ -239,7 +239,7 @@ export function useKubernetesData() {
 
   // Recharger quand les clusters sélectionnés changent
   watch(selectedClusters, (newClusters, oldClusters) => {
-    console.log('🔄 Selected clusters changed:', { old: oldClusters, new: newClusters })
+    //console.log('🔄 Selected clusters changed:', { old: oldClusters, new: newClusters })
     loadAllData()
   }, { deep: true })
 
@@ -261,21 +261,21 @@ export function useKubernetesData() {
         return []
     }
 
-    console.log(`🔍 Filtering ${resourceType}:`, resources)
+    //console.log(`🔍 Filtering ${resourceType}:`, resources)
 
     // Filtrer par namespace si nécessaire
     if (selectedNamespace.value) {
       resources = resources.filter(resource => resource.namespace === selectedNamespace.value)
     }
 
-    console.log(`✅ Filtered ${resourceType}:`, resources)
+    //console.log(`✅ Filtered ${resourceType}:`, resources)
     return resources
   }
 
   // Vérifier si un type de ressource doit être affiché
   function shouldShowResourceType(resourceType) {
     const shouldShow = !selectedResourceType.value || selectedResourceType.value === resourceType
-    console.log(`👁️ Should show ${resourceType}:`, shouldShow)
+    //console.log(`👁️ Should show ${resourceType}:`, shouldShow)
     return shouldShow
   }
 

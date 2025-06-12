@@ -19,7 +19,7 @@
               Cluster
             </th>
             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Version
+              Image:Version
             </th>
             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Prêt
