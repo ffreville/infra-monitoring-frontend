@@ -22,9 +22,6 @@
               Version
             </th>
             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Status
-            </th>
-            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Prêt
             </th>
           </tr>
@@ -46,14 +43,6 @@
                 :class="getVersionClass(deployment.clusterVersions[cluster.id])"
               >
                 {{ formatVersion(deployment.clusterVersions[cluster.id]?.version) }}
-              </span>
-            </td>
-            <td class="px-3 py-2 whitespace-nowrap">
-              <span 
-                class="text-xs font-medium"
-                :class="getStatusClass(deployment.clusterVersions[cluster.id]?.status)"
-              >
-                {{ deployment.clusterVersions[cluster.id]?.status || 'N/A' }}
               </span>
             </td>
             <td class="px-3 py-2 whitespace-nowrap">

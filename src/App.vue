@@ -97,8 +97,9 @@
               <template #default="{ resources }">
                 <CronJobCard
                   v-for="cronjob in resources"
-                  :key="`${cronjob.clusterId}-${cronjob.namespace}-${cronjob.name}`"
+                  :key="`${cronjob.namespace}-${cronjob.name}`"
                   :cronjob="cronjob"
+                  :selected-clusters="selectedClusters"
                   @view-details="handleViewDetails"
                   @trigger="handleTrigger"
                 />
@@ -118,8 +119,9 @@
               <template #default="{ resources }">
                 <StatefulSetCard
                   v-for="statefulset in resources"
-                  :key="`${statefulset.clusterId}-${statefulset.namespace}-${statefulset.name}`"
+                  :key="`${statefulset.namespace}-${statefulset.name}`"
                   :statefulset="statefulset"
+                  :selected-clusters="selectedClusters"
                   @view-details="handleViewDetails"
                   @scale="handleScale"
                 />
