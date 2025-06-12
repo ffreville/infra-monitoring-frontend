@@ -20,42 +20,66 @@ export function useKubernetesData() {
   const selectedResourceType = ref('')
   const selectedClusters = ref([]) // Aucun cluster sélectionné par défaut
 
-  // Fonction pour regrouper les déploiements par nom
-  function groupDeploymentsByName(deployments) {
+  // Fonction pour regrouper les ressources par nom et namespace
+  function groupResourcesByName(resources, resourceType) {
     const grouped = {}
     
-    // Initialiser les groupes avec tous les déploiements uniques
-    deployments.forEach(deployment => {
-      const key = `${deployment.namespace}-${deployment.name}`
+    // Initialiser les groupes avec toutes les ressources uniques
+    resources.forEach(resource => {
+      const key = `${resource.namespace}-${resource.name}`
       if (!grouped[key]) {
         grouped[key] = {
-          name: deployment.name,
-          namespace: deployment.namespace,
-          status: deployment.status,
-          ready: deployment.ready,
-          replicas: deployment.replicas,
-          clusterVersions: {} // { clusterId: { version, status, ready } }
+          name: resource.name,
+          namespace: resource.namespace,
+          status: resource.status,
+          ready: resource.ready,
+          replicas: resource.replicas,
+          // Champs spécifiques selon le type
+          ...(resourceType === 'cronjobs' && {
+            schedule: resource.schedule,
+            lastRun: resource.lastRun,
+            active: resource.active,
+            suspend: resource.suspend
+          }),
+          ...(resourceType === 'statefulsets' && {
+            serviceName: resource.serviceName
+          }),
+          clusterVersions: {} // { clusterId: { version, status, ready, ... } }
         }
       }
       
       // Ajouter les informations de version pour ce cluster
-      grouped[key].clusterVersions[deployment.clusterId] = {
-        version: deployment.images?.[0] || 'N/A',
-        status: deployment.status,
-        ready: deployment.ready,
-        replicas: deployment.replicas
+      grouped[key].clusterVersions[resource.clusterId] = {
+        version: resource.images?.[0] || 'N/A',
+        status: resource.status,
+        ready: resource.ready,
+        replicas: resource.replicas,
+        // Champs spécifiques selon le type
+        ...(resourceType === 'cronjobs' && {
+          schedule: resource.schedule,
+          lastRun: resource.lastRun,
+          active: resource.active,
+          suspend: resource.suspend
+        })
       }
     })
     
     // S'assurer que tous les clusters sélectionnés ont une entrée (même vide)
-    Object.values(grouped).forEach(deployment => {
+    Object.values(grouped).forEach(resource => {
       selectedClusters.value.forEach(clusterId => {
-        if (!deployment.clusterVersions[clusterId]) {
-          deployment.clusterVersions[clusterId] = {
+        if (!resource.clusterVersions[clusterId]) {
+          resource.clusterVersions[clusterId] = {
             version: 'N/A',
             status: 'N/A',
             ready: 'N/A',
-            replicas: 'N/A'
+            replicas: 'N/A',
+            // Valeurs par défaut selon le type
+            ...(resourceType === 'cronjobs' && {
+              schedule: 'N/A',
+              lastRun: 'N/A',
+              active: 0,
+              suspend: false
+            })
           }
         }
       })
@@ -87,10 +111,10 @@ export function useKubernetesData() {
     try {
       const data = await kubernetesApi.getAllClustersResources(selectedClusters.value)
       
-      // Regrouper les déploiements par nom
-      state.deployments = groupDeploymentsByName(data.deployments)
-      state.cronjobs = data.cronjobs
-      state.statefulsets = data.statefulsets
+      // Regrouper toutes les ressources par nom
+      state.deployments = groupResourcesByName(data.deployments, 'deployments')
+      state.cronjobs = groupResourcesByName(data.cronjobs, 'cronjobs')
+      state.statefulsets = groupResourcesByName(data.statefulsets, 'statefulsets')
       state.namespaces = data.namespaces
 
       // Mettre à jour les statuts des clusters
@@ -115,9 +139,9 @@ export function useKubernetesData() {
       console.warn('Utilisation des données de démonstration')
       
       // Utiliser les données de démonstration en cas d'erreur complète
-      state.deployments = groupDeploymentsByName(mockData.deployments)
-      state.cronjobs = mockData.cronjobs
-      state.statefulsets = mockData.statefulsets
+      state.deployments = groupResourcesByName(mockData.deployments, 'deployments')
+      state.cronjobs = groupResourcesByName(mockData.cronjobs, 'cronjobs')
+      state.statefulsets = groupResourcesByName(mockData.statefulsets, 'statefulsets')
       state.namespaces = mockData.namespaces
 
       // Marquer tous les clusters comme en erreur
