@@ -1,59 +1,4 @@
-// Fonctions pour les clusters
-function toggleCluster(clusterId) {
-  const current = [...props.selectedClusters]
-  const index = current.indexOf(clusterId)
-  
-  if (index > -1) {
-    current.splice(index, 1)
-  } else {
-    current.push(clusterId)
-  }
-  
-  emit('update:selectedClusters', current)
-}
-
-function toggleAllClusters() {
-  if (props.selectedClusters.length === clusters.length) {
-    // Si tous sont sélectionnés, on désélectionne tout
-    emit('update:selectedClusters', [])
-  } else {
-    // Sinon, on sélectionne tous
-    emit('update:selectedClusters', clusters.map(c => c.id))
-  }
-}
-
-function getClusterColorClass(color) {
-  const colorMap = {
-    blue: 'bg-blue-500',
-    green: 'bg-green-500',
-    yellow: 'bg-yellow-500',
-    purple: 'bg-purple-500',
-    orange: 'bg-orange-500',
-    red: 'bg-red-500'
-  }
-  return colorMap[color] || 'bg-gray-500'
-}
-
-// Fonctions utilitaires pour les noms
-function getSelectedClusterNames() {
-  return props.selectedClusters
-    .map(id => clusters.find(c => c.id === id)?.name)
-    .filter(Boolean)
-    .join(', ')
-}
-
-function getSelectedResourceTypeNames() {
-  return props.selectedResourceTypes
-    .map(t => resourceTypes.find(rt => rt.value === t)?.label)
-    .filter(Boolean)
-    .join(', ')
-}            <!-- Indicateur clusters -->
-            <div v-if="selectedClusters.length > 0" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clip-rule="evenodd" />
-              </svg>
-              {{ selectedClusters.map(id => clusters.find(c => c.id === id)?.name).join(', ') }}
-            </div><template>
+<template>
   <div class="bg-white rounded-lg shadow p-6 mb-6">
     <div class="flex flex-col gap-4">
       <!-- En-tête avec compteur et reset -->
@@ -86,7 +31,7 @@ function getSelectedResourceTypeNames() {
             </svg>
             <span v-if="selectedClusters.length === 0">Aucun cluster</span>
             <span v-else>{{ selectedClusters.length }} cluster{{ selectedClusters.length > 1 ? 's' : '' }}</span>
-            <svg class="w-4 h-4 ml-2" :class="{ 'rotate-180': showClusterDropdown }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 ml-2 transition-transform duration-200" :class="{ 'rotate-180': showClusterDropdown }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
@@ -112,7 +57,7 @@ function getSelectedResourceTypeNames() {
                 <div class="flex items-center">
                   <input
                     type="checkbox"
-                    :checked="selectedClusters.length === clusters.length"
+                    :checked="isAllClustersSelected"
                     class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded pointer-events-none"
                   />
                   <span class="ml-3 font-medium text-gray-900">Tous les clusters</span>
@@ -124,7 +69,7 @@ function getSelectedResourceTypeNames() {
               
               <!-- Clusters individuels -->
               <div
-                v-for="cluster in clusters"
+                v-for="cluster in clusterList"
                 :key="cluster.id"
                 @click="toggleCluster(cluster.id)"
                 class="cursor-pointer select-none relative py-2 px-3 hover:bg-gray-100"
@@ -172,6 +117,7 @@ function getSelectedResourceTypeNames() {
             </div>
           </Transition>
         </div>
+
         <!-- Dropdown Namespaces -->
         <div class="relative" ref="namespaceDropdown">
           <button
@@ -183,7 +129,7 @@ function getSelectedResourceTypeNames() {
             </svg>
             <span v-if="selectedNamespaces.length === 0">Tous les namespaces</span>
             <span v-else>{{ selectedNamespaces.length }} namespace{{ selectedNamespaces.length > 1 ? 's' : '' }}</span>
-            <svg class="w-4 h-4 ml-2" :class="{ 'rotate-180': showNamespaceDropdown }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 ml-2 transition-transform duration-200" :class="{ 'rotate-180': showNamespaceDropdown }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
@@ -250,7 +196,7 @@ function getSelectedResourceTypeNames() {
             </svg>
             <span v-if="selectedResourceTypes.length === 0">Tous les types</span>
             <span v-else>{{ selectedResourceTypes.length }} type{{ selectedResourceTypes.length > 1 ? 's' : '' }}</span>
-            <svg class="w-4 h-4 ml-2" :class="{ 'rotate-180': showResourceTypeDropdown }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 ml-2 transition-transform duration-200" :class="{ 'rotate-180': showResourceTypeDropdown }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
@@ -332,6 +278,14 @@ function getSelectedResourceTypeNames() {
 
       <!-- Indicateurs de filtres actifs -->
       <div v-if="hasActiveFilters" class="flex flex-wrap gap-2">
+        <!-- Indicateur clusters -->
+        <div v-if="selectedClusters.length > 0" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clip-rule="evenodd" />
+          </svg>
+          {{ getSelectedClusterNames }}
+        </div>
+
         <!-- Indicateur namespaces -->
         <div v-if="selectedNamespaces.length > 0" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
           <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -345,11 +299,11 @@ function getSelectedResourceTypeNames() {
           <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
           </svg>
-          {{ selectedResourceTypes.map(t => resourceTypes.find(rt => rt.value === t)?.label).join(', ') }}
+          {{ getSelectedResourceTypeNames }}
         </div>
 
         <!-- Indicateur versions différentes -->
-        <div v-if="showOnlyDifferentVersions" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+        <div v-if="showOnlyDifferentVersions" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
           <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
           </svg>
@@ -362,6 +316,7 @@ function getSelectedResourceTypeNames() {
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { clusters } from '../config/clusters'
 
 const props = defineProps({
   namespaces: {
@@ -414,6 +369,9 @@ const showNamespaceDropdown = ref(false)
 const showResourceTypeDropdown = ref(false)
 const showClusterDropdown = ref(false)
 
+// Liste des clusters
+const clusterList = clusters
+
 // Types de ressources disponibles
 const resourceTypes = [
   { 
@@ -433,15 +391,30 @@ const resourceTypes = [
   }
 ]
 
-// Import des clusters
-import { clusters } from '../config/clusters'
-
-// Computed pour savoir si on a des filtres actifs
+// Computed properties
 const hasActiveFilters = computed(() => {
   return props.selectedNamespaces.length > 0 || 
          props.selectedResourceTypes.length > 0 || 
          props.selectedClusters.length > 0 ||
          props.showOnlyDifferentVersions
+})
+
+const isAllClustersSelected = computed(() => {
+  return props.selectedClusters.length === clusters.length
+})
+
+const getSelectedClusterNames = computed(() => {
+  return props.selectedClusters
+    .map(id => clusters.find(c => c.id === id)?.name)
+    .filter(Boolean)
+    .join(', ')
+})
+
+const getSelectedResourceTypeNames = computed(() => {
+  return props.selectedResourceTypes
+    .map(t => resourceTypes.find(rt => rt.value === t)?.label)
+    .filter(Boolean)
+    .join(', ')
 })
 
 // Fonctions pour les dropdowns
@@ -505,6 +478,42 @@ function toggleAllResourceTypes() {
   } else {
     emit('update:selectedResourceTypes', [])
   }
+}
+
+// Fonctions pour les clusters
+function toggleCluster(clusterId) {
+  const current = [...props.selectedClusters]
+  const index = current.indexOf(clusterId)
+  
+  if (index > -1) {
+    current.splice(index, 1)
+  } else {
+    current.push(clusterId)
+  }
+  
+  emit('update:selectedClusters', current)
+}
+
+function toggleAllClusters() {
+  if (props.selectedClusters.length === clusters.length) {
+    // Si tous sont sélectionnés, on désélectionne tout
+    emit('update:selectedClusters', [])
+  } else {
+    // Sinon, on sélectionne tous
+    emit('update:selectedClusters', clusters.map(c => c.id))
+  }
+}
+
+function getClusterColorClass(color) {
+  const colorMap = {
+    blue: 'bg-blue-500',
+    green: 'bg-green-500',
+    yellow: 'bg-yellow-500',
+    purple: 'bg-purple-500',
+    orange: 'bg-orange-500',
+    red: 'bg-red-500'
+  }
+  return colorMap[color] || 'bg-gray-500'
 }
 
 // Fermer les dropdowns quand on clique ailleurs
