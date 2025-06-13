@@ -1,6 +1,6 @@
 <template>
   <div class="bg-white rounded-lg shadow p-6 mb-6">
-    <div class="flex flex-col gap-6">
+    <div class="flex flex-col gap-4">
       <!-- En-tête avec compteur et reset -->
       <div class="flex justify-between items-center">
         <h3 class="text-lg font-medium text-gray-900">Filtres</h3>
@@ -18,151 +18,190 @@
         </div>
       </div>
 
-      <!-- Filtres principaux -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Filtre par namespaces -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-3">
-            Namespaces
-            <span v-if="selectedNamespaces.length > 0" class="text-blue-600">
-              ({{ selectedNamespaces.length }} sélectionné{{ selectedNamespaces.length > 1 ? 's' : '' }})
-            </span>
-          </label>
-          <div class="border border-gray-200 rounded-md p-3 max-h-48 overflow-y-auto">
-            <div class="space-y-2">
+      <!-- Filtres principaux en ligne -->
+      <div class="flex flex-wrap gap-4 items-center">
+        <!-- Dropdown Namespaces -->
+        <div class="relative" ref="namespaceDropdown">
+          <button
+            @click="toggleNamespaceDropdown"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <svg class="w-4 h-4 mr-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-6a1 1 0 00-1-1H9a1 1 0 00-1 1v6a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clip-rule="evenodd" />
+            </svg>
+            <span v-if="selectedNamespaces.length === 0">Tous les namespaces</span>
+            <span v-else>{{ selectedNamespaces.length }} namespace{{ selectedNamespaces.length > 1 ? 's' : '' }}</span>
+            <svg class="w-4 h-4 ml-2" :class="{ 'rotate-180': showNamespaceDropdown }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <!-- Menu déroulant Namespaces -->
+          <Transition
+            enter-active-class="transition ease-out duration-100"
+            enter-from-class="transform opacity-0 scale-95"
+            enter-to-class="transform opacity-100 scale-100"
+            leave-active-class="transition ease-in duration-75"
+            leave-from-class="transform opacity-100 scale-100"
+            leave-to-class="transform opacity-0 scale-95"
+          >
+            <div
+              v-show="showNamespaceDropdown"
+              class="absolute z-10 mt-1 w-80 bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm"
+            >
               <!-- Option "Tous les namespaces" -->
-              <label class="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded">
-                <input
-                  type="checkbox"
-                  :checked="selectedNamespaces.length === 0"
-                  @change="toggleAllNamespaces"
-                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <span class="ml-2 text-sm text-gray-700 font-medium">
-                  Tous les namespaces
-                </span>
-              </label>
+              <div
+                @click="toggleAllNamespaces"
+                class="cursor-pointer select-none relative py-2 px-3 hover:bg-gray-100"
+              >
+                <div class="flex items-center">
+                  <input
+                    type="checkbox"
+                    :checked="selectedNamespaces.length === 0"
+                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded pointer-events-none"
+                  />
+                  <span class="ml-3 font-medium text-gray-900">Tous les namespaces</span>
+                </div>
+              </div>
               
               <!-- Séparateur -->
-              <hr class="border-gray-200">
+              <div class="border-t border-gray-200 my-1"></div>
               
               <!-- Namespaces individuels -->
-              <label 
-                v-for="ns in namespaces" 
+              <div
+                v-for="ns in namespaces"
                 :key="ns.name"
-                class="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded"
+                @click="toggleNamespace(ns.name)"
+                class="cursor-pointer select-none relative py-2 px-3 hover:bg-gray-100"
               >
-                <input
-                  type="checkbox"
-                  :value="ns.name"
-                  :checked="selectedNamespaces.includes(ns.name)"
-                  @change="toggleNamespace(ns.name)"
-                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <span class="ml-2 text-sm text-gray-700">{{ ns.name }}</span>
-              </label>
+                <div class="flex items-center">
+                  <input
+                    type="checkbox"
+                    :checked="selectedNamespaces.includes(ns.name)"
+                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded pointer-events-none"
+                  />
+                  <span class="ml-3 text-gray-900">{{ ns.name }}</span>
+                </div>
+              </div>
             </div>
-          </div>
+          </Transition>
         </div>
-        
-        <!-- Filtre par types de ressources -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-3">
-            Types de ressources
-            <span v-if="selectedResourceTypes.length > 0" class="text-blue-600">
-              ({{ selectedResourceTypes.length }} sélectionné{{ selectedResourceTypes.length > 1 ? 's' : '' }})
-            </span>
-          </label>
-          <div class="border border-gray-200 rounded-md p-3">
-            <div class="space-y-2">
-              <!-- Option "Toutes les ressources" -->
-              <label class="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded">
-                <input
-                  type="checkbox"
-                  :checked="selectedResourceTypes.length === 0"
-                  @change="toggleAllResourceTypes"
-                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <span class="ml-2 text-sm text-gray-700 font-medium">
-                  Toutes les ressources
-                </span>
-              </label>
+
+        <!-- Dropdown Types de ressources -->
+        <div class="relative" ref="resourceTypeDropdown">
+          <button
+            @click="toggleResourceTypeDropdown"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <svg class="w-4 h-4 mr-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+            </svg>
+            <span v-if="selectedResourceTypes.length === 0">Tous les types</span>
+            <span v-else>{{ selectedResourceTypes.length }} type{{ selectedResourceTypes.length > 1 ? 's' : '' }}</span>
+            <svg class="w-4 h-4 ml-2" :class="{ 'rotate-180': showResourceTypeDropdown }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <!-- Menu déroulant Types de ressources -->
+          <Transition
+            enter-active-class="transition ease-out duration-100"
+            enter-from-class="transform opacity-0 scale-95"
+            enter-to-class="transform opacity-100 scale-100"
+            leave-active-class="transition ease-in duration-75"
+            leave-from-class="transform opacity-100 scale-100"
+            leave-to-class="transform opacity-0 scale-95"
+          >
+            <div
+              v-show="showResourceTypeDropdown"
+              class="absolute z-10 mt-1 w-64 bg-white shadow-lg rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
+            >
+              <!-- Option "Tous les types" -->
+              <div
+                @click="toggleAllResourceTypes"
+                class="cursor-pointer select-none relative py-2 px-3 hover:bg-gray-100"
+              >
+                <div class="flex items-center">
+                  <input
+                    type="checkbox"
+                    :checked="selectedResourceTypes.length === 0"
+                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded pointer-events-none"
+                  />
+                  <span class="ml-3 font-medium text-gray-900">Tous les types</span>
+                </div>
+              </div>
               
               <!-- Séparateur -->
-              <hr class="border-gray-200">
+              <div class="border-t border-gray-200 my-1"></div>
               
               <!-- Types de ressources -->
-              <label 
-                v-for="resourceType in resourceTypes" 
+              <div
+                v-for="resourceType in resourceTypes"
                 :key="resourceType.value"
-                class="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded"
+                @click="toggleResourceType(resourceType.value)"
+                class="cursor-pointer select-none relative py-2 px-3 hover:bg-gray-100"
               >
-                <input
-                  type="checkbox"
-                  :value="resourceType.value"
-                  :checked="selectedResourceTypes.includes(resourceType.value)"
-                  @change="toggleResourceType(resourceType.value)"
-                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <div class="ml-2 flex items-center">
-                  <div 
-                    class="w-3 h-3 rounded-full mr-2" 
-                    :class="resourceType.colorClass"
-                  ></div>
-                  <span class="text-sm text-gray-700">{{ resourceType.label }}</span>
+                <div class="flex items-center">
+                  <input
+                    type="checkbox"
+                    :checked="selectedResourceTypes.includes(resourceType.value)"
+                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded pointer-events-none"
+                  />
+                  <div class="ml-3 flex items-center">
+                    <div 
+                      class="w-3 h-3 rounded-full mr-2" 
+                      :class="resourceType.colorClass"
+                    ></div>
+                    <span class="text-gray-900">{{ resourceType.label }}</span>
+                  </div>
                 </div>
-              </label>
+              </div>
             </div>
-          </div>
+          </Transition>
+        </div>
+
+        <!-- Checkbox versions différentes -->
+        <div class="flex items-center">
+          <input
+            id="different-versions-filter"
+            type="checkbox"
+            :checked="showOnlyDifferentVersions"
+            @change="$emit('update:showOnlyDifferentVersions', $event.target.checked)"
+            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label 
+            for="different-versions-filter" 
+            class="ml-2 text-sm text-gray-700 cursor-pointer whitespace-nowrap"
+          >
+            Versions différentes
+          </label>
         </div>
       </div>
 
-      <!-- Filtres avancés -->
-      <div class="border-t border-gray-200 pt-4">
-        <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-          <!-- Case à cocher pour versions différentes -->
-          <div class="flex items-center">
-            <input
-              id="different-versions-filter"
-              type="checkbox"
-              :checked="showOnlyDifferentVersions"
-              @change="$emit('update:showOnlyDifferentVersions', $event.target.checked)"
-              class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label 
-              for="different-versions-filter" 
-              class="ml-2 text-sm text-gray-700 cursor-pointer"
-            >
-              Afficher uniquement les ressources avec des versions différentes
-            </label>
-          </div>
+      <!-- Indicateurs de filtres actifs -->
+      <div v-if="hasActiveFilters" class="flex flex-wrap gap-2">
+        <!-- Indicateur namespaces -->
+        <div v-if="selectedNamespaces.length > 0" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-6a1 1 0 00-1-1H9a1 1 0 00-1 1v6a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clip-rule="evenodd" />
+          </svg>
+          {{ selectedNamespaces.join(', ') }}
+        </div>
 
-          <!-- Indicateurs de filtres actifs -->
-          <div class="flex flex-wrap gap-2">
-            <!-- Indicateur namespaces -->
-            <div v-if="selectedNamespaces.length > 0" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-6a1 1 0 00-1-1H9a1 1 0 00-1 1v6a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clip-rule="evenodd" />
-              </svg>
-              {{ selectedNamespaces.length }} namespace{{ selectedNamespaces.length > 1 ? 's' : '' }}
-            </div>
+        <!-- Indicateur types de ressources -->
+        <div v-if="selectedResourceTypes.length > 0" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+          <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+          </svg>
+          {{ selectedResourceTypes.map(t => resourceTypes.find(rt => rt.value === t)?.label).join(', ') }}
+        </div>
 
-            <!-- Indicateur types de ressources -->
-            <div v-if="selectedResourceTypes.length > 0" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-              <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
-              </svg>
-              {{ selectedResourceTypes.length }} type{{ selectedResourceTypes.length > 1 ? 's' : '' }}
-            </div>
-
-            <!-- Indicateur versions différentes -->
-            <div v-if="showOnlyDifferentVersions" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-              </svg>
-              Versions différentes
-            </div>
-          </div>
+        <!-- Indicateur versions différentes -->
+        <div v-if="showOnlyDifferentVersions" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+          </svg>
+          Versions différentes
         </div>
       </div>
     </div>
@@ -170,7 +209,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
   namespaces: {
@@ -202,6 +241,12 @@ const emit = defineEmits([
   'reset-filters'
 ])
 
+// Refs pour les dropdowns
+const namespaceDropdown = ref(null)
+const resourceTypeDropdown = ref(null)
+const showNamespaceDropdown = ref(false)
+const showResourceTypeDropdown = ref(false)
+
 // Types de ressources disponibles
 const resourceTypes = [
   { 
@@ -221,6 +266,25 @@ const resourceTypes = [
   }
 ]
 
+// Computed pour savoir si on a des filtres actifs
+const hasActiveFilters = computed(() => {
+  return props.selectedNamespaces.length > 0 || 
+         props.selectedResourceTypes.length > 0 || 
+         props.showOnlyDifferentVersions
+})
+
+// Fonctions pour les dropdowns
+function toggleNamespaceDropdown() {
+  showNamespaceDropdown.value = !showNamespaceDropdown.value
+  showResourceTypeDropdown.value = false
+}
+
+function toggleResourceTypeDropdown() {
+  showResourceTypeDropdown.value = !showResourceTypeDropdown.value
+  showNamespaceDropdown.value = false
+}
+
+// Fonctions pour les namespaces
 function toggleNamespace(namespace) {
   const current = [...props.selectedNamespaces]
   const index = current.indexOf(namespace)
@@ -236,14 +300,13 @@ function toggleNamespace(namespace) {
 
 function toggleAllNamespaces() {
   if (props.selectedNamespaces.length === 0) {
-    // Si aucun n'est sélectionné, on ne fait rien (garde "tous")
     return
   } else {
-    // Si certains sont sélectionnés, on désélectionne tout
     emit('update:selectedNamespaces', [])
   }
 }
 
+// Fonctions pour les types de ressources
 function toggleResourceType(resourceType) {
   const current = [...props.selectedResourceTypes]
   const index = current.indexOf(resourceType)
@@ -259,11 +322,33 @@ function toggleResourceType(resourceType) {
 
 function toggleAllResourceTypes() {
   if (props.selectedResourceTypes.length === 0) {
-    // Si aucun n'est sélectionné, on ne fait rien (garde "tous")
     return
   } else {
-    // Si certains sont sélectionnés, on désélectionne tout
     emit('update:selectedResourceTypes', [])
   }
 }
+
+// Fermer les dropdowns quand on clique ailleurs
+function handleClickOutside(event) {
+  if (namespaceDropdown.value && !namespaceDropdown.value.contains(event.target)) {
+    showNamespaceDropdown.value = false
+  }
+  if (resourceTypeDropdown.value && !resourceTypeDropdown.value.contains(event.target)) {
+    showResourceTypeDropdown.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
+
+<style scoped>
+.rotate-180 {
+  transform: rotate(180deg);
+}
+</style>
