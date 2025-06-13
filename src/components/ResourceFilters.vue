@@ -32,6 +32,21 @@ function getClusterColorClass(color) {
     red: 'bg-red-500'
   }
   return colorMap[color] || 'bg-gray-500'
+}
+
+// Fonctions utilitaires pour les noms
+function getSelectedClusterNames() {
+  return props.selectedClusters
+    .map(id => clusters.find(c => c.id === id)?.name)
+    .filter(Boolean)
+    .join(', ')
+}
+
+function getSelectedResourceTypeNames() {
+  return props.selectedResourceTypes
+    .map(t => resourceTypes.find(rt => rt.value === t)?.label)
+    .filter(Boolean)
+    .join(', ')
 }            <!-- Indicateur clusters -->
             <div v-if="selectedClusters.length > 0" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
               <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
