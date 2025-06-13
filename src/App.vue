@@ -21,8 +21,8 @@
       <div class="px-4 py-6 sm:px-0">
         <ResourceFilters
           :namespaces="state.namespaces"
-          v-model:selected-namespace="selectedNamespace"
-          v-model:selected-resource-type="selectedResourceType"
+          v-model:selected-namespaces="selectedNamespaces"
+          v-model:selected-resource-types="selectedResourceTypes"
           v-model:show-only-different-versions="showOnlyDifferentVersions"
           :total-count="totalResourcesCount"
           @reset-filters="resetFilters"
@@ -159,8 +159,8 @@ import LoadingSpinner from './components/LoadingSpinner.vue'
 // Composable pour la gestion des données
 const {
   state,
-  selectedNamespace,
-  selectedResourceType,
+  selectedNamespaces,
+  selectedResourceTypes,
   selectedClusters,
   showOnlyDifferentVersions,
   filteredDeployments,

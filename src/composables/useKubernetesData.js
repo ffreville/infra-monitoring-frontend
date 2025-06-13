@@ -16,10 +16,10 @@ export function useKubernetesData() {
   })
 
   // Filtres
-  const selectedNamespace = ref('')
-  const selectedResourceType = ref('')
+  const selectedNamespaces = ref([]) // Changé en array
+  const selectedResourceTypes = ref([]) // Changé en array
   const selectedClusters = ref([]) // Aucun cluster sélectionné par défaut
-  const showOnlyDifferentVersions = ref(false) // Nouveau filtre
+  const showOnlyDifferentVersions = ref(false)
 
   // Fonction pour regrouper les déploiements par nom (méthode originale)
   function groupDeploymentsByName(deployments) {
@@ -263,9 +263,11 @@ export function useKubernetesData() {
         return []
     }
 
-    // Filtrer par namespace si nécessaire
-    if (selectedNamespace.value) {
-      resources = resources.filter(resource => resource.namespace === selectedNamespace.value)
+    // Filtrer par namespaces si nécessaire (sélection multiple)
+    if (selectedNamespaces.value.length > 0) {
+      resources = resources.filter(resource => 
+        selectedNamespaces.value.includes(resource.namespace)
+      )
     }
 
     // Filtrer par versions différentes si nécessaire
@@ -278,7 +280,10 @@ export function useKubernetesData() {
 
   // Vérifier si un type de ressource doit être affiché
   function shouldShowResourceType(resourceType) {
-    return !selectedResourceType.value || selectedResourceType.value === resourceType
+    // Si aucun type sélectionné, afficher tous
+    if (selectedResourceTypes.value.length === 0) return true
+    // Sinon, afficher seulement les types sélectionnés
+    return selectedResourceTypes.value.includes(resourceType)
   }
 
   // Computed properties
@@ -307,8 +312,8 @@ export function useKubernetesData() {
 
   // Réinitialiser les filtres
   function resetFilters() {
-    selectedNamespace.value = ''
-    selectedResourceType.value = ''
+    selectedNamespaces.value = []
+    selectedResourceTypes.value = []
     showOnlyDifferentVersions.value = false
   }
 
@@ -320,8 +325,8 @@ export function useKubernetesData() {
   return {
     // État
     state,
-    selectedNamespace,
-    selectedResourceType,
+    selectedNamespaces,
+    selectedResourceTypes,
     selectedClusters,
     showOnlyDifferentVersions,
     
