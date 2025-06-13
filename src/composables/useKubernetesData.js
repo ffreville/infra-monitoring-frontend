@@ -19,10 +19,10 @@ export function useKubernetesData() {
   const selectedNamespace = ref('')
   const selectedResourceType = ref('')
   const selectedClusters = ref([]) // Aucun cluster sélectionné par défaut
+  const showOnlyDifferentVersions = ref(false) // Nouveau filtre
 
   // Fonction pour regrouper les déploiements par nom (méthode originale)
   function groupDeploymentsByName(deployments) {
-    //console.log('🚀 Grouping deployments:', deployments)
     const grouped = {}
     
     // Initialiser les groupes avec tous les déploiements uniques
@@ -62,14 +62,11 @@ export function useKubernetesData() {
       })
     })
     
-    const result = Object.values(grouped)
-    //console.log('✅ Grouped deployments result:', result)
-    return result
+    return Object.values(grouped)
   }
 
   // Fonction pour regrouper les CronJobs par nom
   function groupCronJobsByName(cronjobs) {
-    //console.log('🚀 Grouping cronjobs:', cronjobs)
     const grouped = {}
     
     cronjobs.forEach(cronjob => {
@@ -112,14 +109,11 @@ export function useKubernetesData() {
       })
     })
     
-    const result = Object.values(grouped)
-    //console.log('✅ Grouped cronjobs result:', result)
-    return result
+    return Object.values(grouped)
   }
 
   // Fonction pour regrouper les StatefulSets par nom
   function groupStatefulSetsByName(statefulsets) {
-    //console.log('🚀 Grouping statefulsets:', statefulsets)
     const grouped = {}
     
     statefulsets.forEach(statefulset => {
@@ -156,17 +150,33 @@ export function useKubernetesData() {
       })
     })
     
-    const result = Object.values(grouped)
-    //console.log('✅ Grouped statefulsets result:', result)
-    return result
+    return Object.values(grouped)
+  }
+
+  // Fonction pour vérifier si une ressource a des versions différentes
+  function hasDifferentVersions(resource) {
+    const clusterVersions = Object.values(resource.clusterVersions || {})
+    
+    // Si on n'a aucune donnée de cluster, pas de différence détectable
+    if (clusterVersions.length === 0) return false
+    
+    // Récupérer seulement les versions valides (non "N/A")
+    const validVersions = clusterVersions
+      .map(cluster => cluster.version)
+      .filter(version => version && version !== 'N/A')
+    
+    // Si on a moins de 2 versions valides, pas de différence possible
+    // (ressource déployée sur un seul cluster ou pas déployée du tout)
+    if (validVersions.length < 2) return false
+    
+    // Vérifier s'il y a des versions différentes parmi les versions valides
+    const uniqueValidVersions = [...new Set(validVersions)]
+    return uniqueValidVersions.length > 1
   }
 
   // Charger les données des clusters sélectionnés
   async function loadAllData() {
-    //console.log('🔄 Loading data for clusters:', selectedClusters.value)
-    
     if (selectedClusters.value.length === 0) {
-      //console.log('⚠️ No clusters selected, clearing data')
       state.deployments = []
       state.cronjobs = []
       state.statefulsets = []
@@ -186,18 +196,12 @@ export function useKubernetesData() {
 
     try {
       const data = await kubernetesApi.getAllClustersResources(selectedClusters.value)
-      //console.log('📦 Raw data from API:', data)
       
       // Regrouper les ressources par nom
       state.deployments = groupDeploymentsByName(data.deployments)
       state.cronjobs = groupCronJobsByName(data.cronjobs)
       state.statefulsets = groupStatefulSetsByName(data.statefulsets)
       state.namespaces = data.namespaces
-
-      //console.log('📊 Final state:')
-      //console.log('  - Deployments:', state.deployments)
-      //console.log('  - CronJobs:', state.cronjobs)
-      //console.log('  - StatefulSets:', state.statefulsets)
 
       // Mettre à jour les statuts des clusters
       selectedClusters.value.forEach(clusterId => {
@@ -217,9 +221,8 @@ export function useKubernetesData() {
         state.error = `Impossible de charger les données de certains clusters: ${failedClusters}`
       }
     } catch (error) {
-      console.error('❌ Error loading data:', error)
       state.error = `Erreur générale: ${error.message}`
-      console.warn('🔄 Using mock data')
+      console.warn('Utilisation des données de démonstration')
       
       // Utiliser les données de démonstration en cas d'erreur complète
       state.deployments = groupDeploymentsByName(mockData.deployments)
@@ -238,8 +241,7 @@ export function useKubernetesData() {
   }
 
   // Recharger quand les clusters sélectionnés changent
-  watch(selectedClusters, (newClusters, oldClusters) => {
-    //console.log('🔄 Selected clusters changed:', { old: oldClusters, new: newClusters })
+  watch(selectedClusters, () => {
     loadAllData()
   }, { deep: true })
 
@@ -261,22 +263,22 @@ export function useKubernetesData() {
         return []
     }
 
-    //console.log(`🔍 Filtering ${resourceType}:`, resources)
-
     // Filtrer par namespace si nécessaire
     if (selectedNamespace.value) {
       resources = resources.filter(resource => resource.namespace === selectedNamespace.value)
     }
 
-    //console.log(`✅ Filtered ${resourceType}:`, resources)
+    // Filtrer par versions différentes si nécessaire
+    if (showOnlyDifferentVersions.value) {
+      resources = resources.filter(resource => hasDifferentVersions(resource))
+    }
+
     return resources
   }
 
   // Vérifier si un type de ressource doit être affiché
   function shouldShowResourceType(resourceType) {
-    const shouldShow = !selectedResourceType.value || selectedResourceType.value === resourceType
-    //console.log(`👁️ Should show ${resourceType}:`, shouldShow)
-    return shouldShow
+    return !selectedResourceType.value || selectedResourceType.value === resourceType
   }
 
   // Computed properties
@@ -307,6 +309,7 @@ export function useKubernetesData() {
   function resetFilters() {
     selectedNamespace.value = ''
     selectedResourceType.value = ''
+    showOnlyDifferentVersions.value = false
   }
 
   // Obtenir les clusters disponibles
@@ -320,6 +323,7 @@ export function useKubernetesData() {
     selectedNamespace,
     selectedResourceType,
     selectedClusters,
+    showOnlyDifferentVersions,
     
     // Computed
     filteredDeployments,
@@ -333,6 +337,7 @@ export function useKubernetesData() {
     resetFilters,
     getFilteredResources,
     shouldShowResourceType,
-    getAvailableClusters
+    getAvailableClusters,
+    hasDifferentVersions
   }
 }
