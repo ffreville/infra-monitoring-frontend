@@ -18,7 +18,7 @@ export function useKubernetesData() {
   // Filtres
   const selectedNamespaces = ref([]) // Changé en array
   const selectedResourceTypes = ref([]) // Changé en array
-  const selectedClusters = ref([]) // Aucun cluster sélectionné par défaut
+  const selectedClusters = ref(['cluster-dev']) // Dev sélectionné par défaut
   const showOnlyDifferentVersions = ref(false)
 
   // Fonction pour regrouper les déploiements par nom (méthode originale)
@@ -365,6 +365,7 @@ export function useKubernetesData() {
   function resetFilters() {
     selectedNamespaces.value = []
     selectedResourceTypes.value = []
+    selectedClusters.value = ['cluster-dev'] // Garder dev par défaut
     showOnlyDifferentVersions.value = false
   }
 
