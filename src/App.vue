@@ -8,23 +8,21 @@
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-      <!-- Sélecteur de clusters -->
-      <div class="px-4 sm:px-0">
-        <ClusterSelector
-          v-model:selected-clusters="selectedClusters"
-          :cluster-statuses="state.clusterStatuses"
-          :cluster-errors="state.clusterErrors"
-        />
-      </div>
-
-      <!-- Filtres -->
+      <!-- Filtres (incluant les clusters) -->
       <div class="px-4 py-6 sm:px-0">
         <ResourceFilters
           :namespaces="state.namespaces"
-          v-model:selected-namespaces="selectedNamespaces"
-          v-model:selected-resource-types="selectedResourceTypes"
-          v-model:show-only-different-versions="showOnlyDifferentVersions"
+          :selected-namespaces="selectedNamespaces"
+          :selected-resource-types="selectedResourceTypes"
+          :selected-clusters="selectedClusters"
+          :cluster-statuses="state.clusterStatuses"
+          :cluster-errors="state.clusterErrors"
+          :show-only-different-versions="showOnlyDifferentVersions"
           :total-count="totalResourcesCount"
+          @update:selected-namespaces="selectedNamespaces = $event"
+          @update:selected-resource-types="selectedResourceTypes = $event"
+          @update:selected-clusters="selectedClusters = $event"
+          @update:show-only-different-versions="showOnlyDifferentVersions = $event"
           @reset-filters="resetFilters"
         />
       </div>
@@ -138,7 +136,6 @@ import { useKubernetesData } from './composables/useKubernetesData'
 
 // Composants
 import KubernetesHeader from './components/KubernetesHeader.vue'
-import ClusterSelector from './components/ClusterSelector.vue'
 import ResourceFilters from './components/ResourceFilters.vue'
 import NamespaceGroup from './components/NamespaceGroup.vue'
 import LoadingSpinner from './components/LoadingSpinner.vue'
