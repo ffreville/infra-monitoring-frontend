@@ -61,74 +61,64 @@
         </div>
       </div>
 
-      <!-- Cartes de ressources -->
+      <!-- Ressources groupées par namespace -->
       <div v-else class="px-4 sm:px-0">
-        <div class="grid grid-cols-1 gap-6">
-          <!-- Deployments -->
-          <Transition name="slide">
-            <ResourceCard
-              v-if="shouldShowResourceType('deployments')"
-              title="Deployments"
-              type="deployments"
-              :resources="filteredDeployments"
-              empty-message="Aucun deployment trouvé"
-            >
-              <template #default="{ resources }">
-                <DeploymentCard
-                  v-for="deployment in resources"
-                  :key="`${deployment.namespace}-${deployment.name}`"
-                  :deployment="deployment"
-                  :selected-clusters="selectedClusters"
-                  @view-details="handleViewDetails"
-                  @scale="handleScale"
-                />
-              </template>
-            </ResourceCard>
-          </Transition>
+        <!-- Actions globales -->
+        <div v-if="Object.keys(groupedResourcesByNamespace).length > 0" class="mb-6">
+          <div class="flex justify-between items-center">
+            <div class="text-sm text-gray-600">
+              {{ Object.keys(groupedResourcesByNamespace).length }} namespace{{ Object.keys(groupedResourcesByNamespace).length > 1 ? 's' : '' }} avec des ressources
+            </div>
+            <div class="flex gap-2">
+              <button
+                @click="expandAllNamespaces"
+                class="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors duration-200"
+              >
+                Tout déplier
+              </button>
+              <button
+                @click="collapseAllNamespaces"
+                class="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors duration-200"
+              >
+                Tout replier
+              </button>
+            </div>
+          </div>
+        </div>
 
-          <!-- CronJobs -->
-          <Transition name="slide">
-            <ResourceCard
-              v-if="shouldShowResourceType('cronjobs')"
-              title="CronJobs"
-              type="cronjobs"
-              :resources="filteredCronJobs"
-              empty-message="Aucun cronjob trouvé"
-            >
-              <template #default="{ resources }">
-                <CronJobCard
-                  v-for="cronjob in resources"
-                  :key="`${cronjob.namespace}-${cronjob.name}`"
-                  :cronjob="cronjob"
-                  :selected-clusters="selectedClusters"
-                  @view-details="handleViewDetails"
-                  @trigger="handleTrigger"
-                />
-              </template>
-            </ResourceCard>
-          </Transition>
+        <!-- Liste des namespaces -->
+        <div class="space-y-4">
+          <NamespaceGroup
+            v-for="(namespaceResources, namespaceName) in groupedResourcesByNamespace"
+            :key="namespaceName"
+            :namespace-name="namespaceName"
+            :namespace-resources="namespaceResources"
+            :selected-clusters="selectedClusters"
+            :initial-expanded="namespaceExpandedState[namespaceName] !== false"
+            @view-details="handleViewDetails"
+            @scale="handleScale"
+            @trigger="handleTrigger"
+            ref="namespaceGroups"
+          />
+        </div>
 
-          <!-- StatefulSets -->
-          <Transition name="slide">
-            <ResourceCard
-              v-if="shouldShowResourceType('statefulsets')"
-              title="StatefulSets"
-              type="statefulsets"
-              :resources="filteredStatefulSets"
-              empty-message="Aucun statefulset trouvé"
+        <!-- Message si aucune ressource trouvée -->
+        <div v-if="Object.keys(groupedResourcesByNamespace).length === 0" class="text-center py-12">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">Aucune ressource trouvée</h3>
+          <p class="mt-1 text-sm text-gray-500">
+            Aucune ressource ne correspond aux critères de filtrage sélectionnés.
+          </p>
+          <div class="mt-4">
+            <button
+              @click="resetFilters"
+              class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              <template #default="{ resources }">
-                <StatefulSetCard
-                  v-for="statefulset in resources"
-                  :key="`${statefulset.namespace}-${statefulset.name}`"
-                  :statefulset="statefulset"
-                  :selected-clusters="selectedClusters"
-                  @view-details="handleViewDetails"
-                  @scale="handleScale"
-                />
-              </template>
-            </ResourceCard>
-          </Transition>
+              Réinitialiser les filtres
+            </button>
+          </div>
         </div>
       </div>
 
@@ -143,17 +133,14 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useKubernetesData } from './composables/useKubernetesData'
 
 // Composants
 import KubernetesHeader from './components/KubernetesHeader.vue'
 import ClusterSelector from './components/ClusterSelector.vue'
 import ResourceFilters from './components/ResourceFilters.vue'
-import ResourceCard from './components/ResourceCard.vue'
-import DeploymentCard from './components/DeploymentCard.vue'
-import CronJobCard from './components/CronJobCard.vue'
-import StatefulSetCard from './components/StatefulSetCard.vue'
+import NamespaceGroup from './components/NamespaceGroup.vue'
 import LoadingSpinner from './components/LoadingSpinner.vue'
 
 // Composable pour la gestion des données
@@ -163,15 +150,17 @@ const {
   selectedResourceTypes,
   selectedClusters,
   showOnlyDifferentVersions,
-  filteredDeployments,
-  filteredCronJobs,
-  filteredStatefulSets,
+  groupedResourcesByNamespace,
   totalResourcesCount,
   loadAllData,
   refreshData,
   resetFilters,
   shouldShowResourceType
 } = useKubernetesData()
+
+// État pour gérer l'expansion des namespaces
+const namespaceExpandedState = ref({})
+const namespaceGroups = ref([])
 
 // Gestionnaires d'événements
 function handleViewDetails(resource) {
@@ -187,6 +176,31 @@ function handleScale(resource) {
 function handleTrigger(cronjob) {
   console.log('Déclencher cronjob:', cronjob)
   // Ici vous pourriez déclencher manuellement le cronjob
+}
+
+// Fonctions pour gérer l'expansion/contraction globale
+function expandAllNamespaces() {
+  Object.keys(groupedResourcesByNamespace.value).forEach(namespaceName => {
+    namespaceExpandedState.value[namespaceName] = true
+  })
+  // Forcer la mise à jour des composants enfants
+  namespaceGroups.value.forEach(group => {
+    if (group && group.isExpanded !== undefined) {
+      group.isExpanded = true
+    }
+  })
+}
+
+function collapseAllNamespaces() {
+  Object.keys(groupedResourcesByNamespace.value).forEach(namespaceName => {
+    namespaceExpandedState.value[namespaceName] = false
+  })
+  // Forcer la mise à jour des composants enfants
+  namespaceGroups.value.forEach(group => {
+    if (group && group.isExpanded !== undefined) {
+      group.isExpanded = false
+    }
+  })
 }
 
 // Charger les données au montage

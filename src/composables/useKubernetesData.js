@@ -286,10 +286,61 @@ export function useKubernetesData() {
     return selectedResourceTypes.value.includes(resourceType)
   }
 
+  // Fonction pour regrouper les ressources par namespace
+  function groupResourcesByNamespace() {
+    const namespaces = {}
+    
+    // Ajouter les deployments
+    if (shouldShowResourceType('deployments')) {
+      filteredDeployments.value.forEach(deployment => {
+        if (!namespaces[deployment.namespace]) {
+          namespaces[deployment.namespace] = {
+            deployments: [],
+            cronjobs: [],
+            statefulsets: []
+          }
+        }
+        namespaces[deployment.namespace].deployments.push(deployment)
+      })
+    }
+    
+    // Ajouter les cronjobs
+    if (shouldShowResourceType('cronjobs')) {
+      filteredCronJobs.value.forEach(cronjob => {
+        if (!namespaces[cronjob.namespace]) {
+          namespaces[cronjob.namespace] = {
+            deployments: [],
+            cronjobs: [],
+            statefulsets: []
+          }
+        }
+        namespaces[cronjob.namespace].cronjobs.push(cronjob)
+      })
+    }
+    
+    // Ajouter les statefulsets
+    if (shouldShowResourceType('statefulsets')) {
+      filteredStatefulSets.value.forEach(statefulset => {
+        if (!namespaces[statefulset.namespace]) {
+          namespaces[statefulset.namespace] = {
+            deployments: [],
+            cronjobs: [],
+            statefulsets: []
+          }
+        }
+        namespaces[statefulset.namespace].statefulsets.push(statefulset)
+      })
+    }
+    
+    return namespaces
+  }
+
   // Computed properties
   const filteredDeployments = computed(() => getFilteredResources('deployments'))
   const filteredCronJobs = computed(() => getFilteredResources('cronjobs'))
   const filteredStatefulSets = computed(() => getFilteredResources('statefulsets'))
+  
+  const groupedResourcesByNamespace = computed(() => groupResourcesByNamespace())
 
   const totalResourcesCount = computed(() => {
     let total = 0
@@ -334,6 +385,7 @@ export function useKubernetesData() {
     filteredDeployments,
     filteredCronJobs,
     filteredStatefulSets,
+    groupedResourcesByNamespace,
     totalResourcesCount,
     
     // Méthodes
